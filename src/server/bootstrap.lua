@@ -16,7 +16,7 @@ end
 
 -- create server app instance
 local config = require("server.config")
-local app = require("server.HeroServerApp").new(config)
+local app = require("server.TestServerApp").new(config)
 
 -- event loop
 while true do
