@@ -1,7 +1,6 @@
 
 require("server.lib.init")
 require("server.lib.errors")
-require("shared.includes.functions")
 
 local server = require "resty.websocket.server"
 local wb, err = server:new({
