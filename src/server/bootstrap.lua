@@ -51,7 +51,7 @@ while true do
             ngx.log(ngx.ERR, string.format("invalid message = %s", tostring(data)))
         else
             local msgid = message._id_
-            local actionName = app:normalizeActionName(message.action)
+            local actionName = message.action
             local result = app:doRequest(actionName, message)
             if type(result) == "table" then
                 if msgid then result._id_ = msgid end
