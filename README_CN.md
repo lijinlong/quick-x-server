@@ -1,4 +1,3 @@
-
 # 基本架构
 
 
@@ -13,10 +12,10 @@
 	- 如果客户端消息包含 msgid：
 		- 如果结果为 nil，框架创建 table {"\_id\_":msgid}，并编码为 JSON 发送到客户端
 		- 如果结果为 tabel，框架在 table 中添加 "\_id\_" = msgid，并编码为 JSON 发送到客户端
-		- 记录错误信息：ERR\_SERVER\_INVALID\_RESULT。创建 table {"\_id\_":msgid,"err":"ERR\_SERVER\_INVALID\_RESULT"}，并编码为 JSON 发送到客户端
-	- 检查执行结果。如果结果不为 nil，则记录错误信息：ERR\_SERVER\_INVALID\_RESULT
+		- 否则记录错误信息：ERR\_SERVER\_INVALID\_RESULT。创建 table {"\_id\_":msgid,"err":"ERR\_SERVER\_INVALID\_RESULT"}，并编码为 JSON 发送到客户端
+	- 没有 msgid 时检查执行结果。如果结果不为 nil，则记录错误信息：ERR\_SERVER\_INVALID\_RESULT
 3.  Action 方法如果运行出错，返回两个值：false 和错误信息。
   - 如果客户端消息包含 msgid：记录错误信息。创建 table {"\_id\_":msgid,"err":错误信息}，并编码为 JSON 发送到客户端
-  - 否则记录错误信息
+  - 没有 msgid 时记录错误信息
 
 
