@@ -12,8 +12,6 @@ require("framework.debug")
 require("framework.functions")
 json = require("framework.json")
 
-require("shared.includes.functions")
-
 require(cc.PACKAGE_NAME .. ".functions")
 require(cc.PACKAGE_NAME .. ".errors")
 
