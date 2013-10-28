@@ -4,21 +4,27 @@ local CURRENT_MODULE_NAME = ...
 
 -- init shared framework modules
 cc = cc or {}
+cc.PACKAGE_NAME = string.sub(CURRENT_MODULE_NAME, 1, -6)
 cc.VERSION = "2.0.0"
-cc.FRAMEWORK_NAME = "quick-x server"
+cc.FRAMEWORK_NAME = "quick-cocos2d-x server"
 
 require("framework.debug")
 require("framework.functions")
 json = require("framework.json")
 
+require("shared.includes.functions")
+
+require(cc.PACKAGE_NAME .. ".functions")
 require(cc.PACKAGE_NAME .. ".errors")
 
 cc.server = {}
-cc.server.ServerAppBase = require(CURRENT_MODULE_NAME .. ".ServerAppBase")
-cc.server.ActionBase    = require(CURRENT_MODULE_NAME .. ".ActionBase")
-cc.server.Session       = require(CURRENT_MODULE_NAME .. ".Session")
-cc.server.MysqlEasy     = require(CURRENT_MODULE_NAME .. ".MysqlEasy")
-cc.server.RedisEasy     = require(CURRENT_MODULE_NAME .. ".RedisEasy")
+cc.server.ServerAppBase         = require(cc.PACKAGE_NAME .. ".ServerAppBase")
+cc.server.WebSocketsServerBase  = require(cc.PACKAGE_NAME .. ".WebSocketsServerBase")
+cc.server.HttpServerBase        = require(cc.PACKAGE_NAME .. ".HttpServerBase")
+cc.server.CommandLineServerBase = require(cc.PACKAGE_NAME .. ".CommandLineServerBase")
+cc.server.ActionBase            = require(cc.PACKAGE_NAME .. ".ActionBase")
+cc.server.Session               = require(cc.PACKAGE_NAME .. ".Session")
+cc.server.RedisEasy             = require(cc.PACKAGE_NAME .. ".RedisEasy")
 
 -- init base classes
 cc.Registry   = require("framework.cc.Registry")

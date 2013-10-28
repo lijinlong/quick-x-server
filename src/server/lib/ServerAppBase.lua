@@ -1,30 +1,28 @@
 
 local ServerAppBase = class("ServerAppBase")
 
+ServerAppBase.APP_RUN_EVENT          = "APP_RUN_EVENT"
+ServerAppBase.APP_QUIT_EVENT         = "APP_QUIT_EVENT"
+ServerAppBase.CLIENT_ABORT_EVENT     = "CLIENT_ABORT_EVENT"
+
 function ServerAppBase:ctor(config)
-    if type(config) ~= "table" then config = {} end
-    if type(config.appModuleName) ~= "string" then
-        config.appModuleName = "app"
-    end
-    self.requestType = config.requestType or "http"
-    self.config = clone(config)
+    cc.GameObject.extend(self)
+    self:addComponent("components.behavior.EventProtocol"):exportMethods()
 
-    if self.requestType == "http" then
-        self.requestMethod = ngx.req.get_method()
-        self.requestParameters = ngx.req.get_uri_args()
-        if self.requestMethod == "POST" then
-            ngx.req.read_body()
-            table.merge(self.requestParameters, ngx.req.get_post_args())
-        end
-    elseif self.requestType == "websockets" then
-        self.requestParameters = nil
-    else
-        throw(ERR_SERVER_INVALID_CONFIG, "invalid request type", tostring(self.requestType))
-    end
+    self.isRunning = true
+    self.config = clone(totable(config))
+    self.config.appModuleName = config.appModuleName or "app"
+end
 
-    if config.session then
-        self.session = cc.server.Session.new(self)
-    end
+function ServerAppBase:run()
+    self:dispatchEvent({name = ServerAppBase.APP_RUN_EVENT})
+    local ret = self:runEventLoop()
+    self.isRunning = false
+    self:dispatchEvent({name = ServerAppBase.APP_QUIT_EVENT, ret = ret})
+end
+
+function ServerAppBase:runEventLoop()
+    throw(ERR_SERVER_OPERATION_FAILED, "ServerAppBase:runEventLoop() - must override in inherited class")
 end
 
 function ServerAppBase:doRequest(actionName, data)
@@ -38,12 +36,9 @@ function ServerAppBase:doRequest(actionName, data)
     if type(method) ~= "function" then
         throw(ERR_SERVER_INVALID_ACTION, "invalid action %s:%s", actionModuleName, actionMethodName)
     end
-    action.GET, action.POST = self.GET, self.POST
 
     if not data then
-        data = self.requestParameters
-    else
-        self.requestParameters = data
+        data = self.requestParameters or {}
     end
     return method(action, data)
 end
@@ -62,21 +57,6 @@ function ServerAppBase:normalizeActionName(actionName)
     local parts = string.split(actionName, ".")
     if #parts == 1 then parts[2] = 'index' end
     return parts[1], parts[2]
-end
-
-function ServerAppBase:getRedisInstance(config)
-    if not self.redisInstance then
-        self.redisInstance = cc.server.RedisEasy.new(config)
-        self.redisInstance:connect()
-    end
-    return self.redisInstance
-end
-
-function ServerAppBase:getMysqlInstance(config)
-    if not self.mysqlInstance then
-        self.mysqlInstance = cc.server.MysqlEasy.new(config)
-    end
-    return self.mysqlInstance
 end
 
 return ServerAppBase

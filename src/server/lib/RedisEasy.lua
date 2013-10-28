@@ -1,85 +1,96 @@
 
-require("resty.redis")
+--[[--
+
+local config = {
+    host = "127.0.0.1",
+    port = 6379,
+    timeout = 10 * 1000, -- 10 seconds
+}
+
+local redis = RedisEasy.new(config)
+local ok, err = redis:connect()
+
+local ok, err = redis:command(...)
+lcoal ok, err = redis:readReply()
+
+local pipeline = redis:newPipeline()
+pipeline:command(...)
+pipeline:command(...)
+local ok, err = pipeline:commit()
+
+local transition = redis:newTransition(watch1, watch2)
+transition:watch(...)
+transition:command(...)
+transition:command(...)
+local ok, err = transition:commit()
+-- transition:discard()
+
+redis:close()
+
+]]
 
 local RedisEasy = class("RedisEasy")
 
+local RedisAdapter
+if ngx and ngx.log then
+    RedisAdapter = import(".redis.RestyRedisAdapter")
+else
+    RedisAdapter = import(".redis.HiredisAdapter")
+end
+
+local RedisPipeline = import(".redis.RedisPipeline")
+local RedisTransition = import(".redis.RedisTransition")
+
 function RedisEasy:ctor(config)
-    if type(config) ~= "table" then config = {} end
-    config.timeout = config.timeout or 1000 -- 1 second
-    config.host    = config.host or "127.0.0.1"
-    config.port    = config.port or 6379
-    self.config_ = config
-
-    self.instance_ = resty.redis:new()
-    self.instance_:set_timeout(self.config_.timeout)
-
-    self.watch_ = false
-
-    local function addCommand(cmd)
-        self[cmd] = function(self, ...)
-            local res, err = self.instance_[cmd](self.instance_, ...)
-            if err then
-                throw("redis error " .. tostring(err), ERROR_REDIS_FAILED)
-            end
-            return res
-        end
-    end
-
-    for i, cmd in ipairs(resty.redis.commands) do
-        addCommand(cmd)
-    end
-
-    addCommand("hmset")
-    addCommand("init_pipeline")
-    addCommand("cancel_pipeline")
-    addCommand("commit_pipeline")
+    self.config = clone(totable(config))
+    self.config.host = self.config.host or "127.0.0.1"
+    self.config.port = self.config.port or 6379
+    self.config.timeout = self.config.timeout or 10 * 1000
+    self.adapter = RedisAdapter.new(self)
 end
 
 function RedisEasy:connect()
-    local ok, err = self.instance_:connect(self.config_.host, self.config_.port)
-    if not ok then
-        throw("redis error " .. tostring(err), ERROR_REDIS_FAILED)
+    return self.adapter:connect()
+end
+
+function RedisEasy:close()
+    return self.adapter:close()
+end
+
+function RedisEasy:command(command, ...)
+    return self.adapter:command(command, ...)
+end
+
+function RedisEasy:readReply()
+    return self.adapter:readReply()
+end
+
+function RedisEasy:newPipeline()
+    return RedisPipeline.new(self)
+end
+
+function RedisEasy:newTransition(...)
+    return RedisTransition.new(self, ...)
+end
+
+function RedisEasy:hashToArray(hash)
+    local arr = {}
+    for k, v in pairs(hash) do
+        arr[#arr + 1] = k
+        arr[#arr + 1] = v
     end
+    return arr
 end
 
-function RedisEasy:loadModel(cls, id)
-    local fields = self:hgetall(id)
-    local properties = self.instance_:array_to_hash(fields)
-    return cls.new(properties)
-end
+function RedisEasy:arrayToHash(arr)
+    local c = #arr
+    assert(c % 2 == 0, "RedisEasy:arrayToHash() - invalid array")
 
-function RedisEasy:updateModel(model, id)
-    local id = id or model:getId()
-    local fields = self:hgetall(id)
-    local properties = self.instance_:array_to_hash(fields)
-    model:setProperties(properties)
-end
-
-function RedisEasy:loadModels(cls, ids)
-    self:init_pipeline()
-    for i, id in ipairs(ids) do
-        self:hgetall(id)
+    local hash = {}
+    for i = 1, c, 2 do
+        hash[arr[i]] = arr[i + 1]
     end
-    local results = self:commit_pipeline()
-
-    local objects = {}
-    for i, fields in ipairs(results) do
-        local properties = self.instance_:array_to_hash(fields)
-        objects[#objects + 1] = cls.new(properties)
-    end
-    return objects
-end
-
-function RedisEasy:saveModel(target)
-    return self:hmset(target:getId(), target:getProperties())
-end
-
-function RedisEasy:saveModels(set)
-    self:multi()
-    for i, target in pairs(set) do
-        self:hmset(target:getId(), target:getProperties())
-    end
-    return self:exec()
+    return hash
 end
 
 return RedisEasy
