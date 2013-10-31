@@ -11,11 +11,7 @@ function RedisPipeline:command(command, ...)
 end
 
 function RedisPipeline:commit()
-    self.easy.adapter:initPipeline()
-    for _, arg in ipairs(self.commands) do
-        self.easy:command(arg[1], unpack(arg[2]))
-    end
-    return self.easy.adapter:commitPipeline()
+    return self.easy.adapter:commitPipeline(self.commands)
 end
 
 return RedisPipeline

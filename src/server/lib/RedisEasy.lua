@@ -35,11 +35,11 @@ local RedisAdapter
 if ngx and ngx.log then
     RedisAdapter = import(".redis.RestyRedisAdapter")
 else
-    RedisAdapter = import(".redis.HiredisAdapter")
+    RedisAdapter = import(".redis.RedisLuaAdapter")
 end
 
 local RedisPipeline = import(".redis.RedisPipeline")
-local RedisTransition = import(".redis.RedisTransition")
+local RedisTransaction = import(".redis.RedisTransaction")
 
 function RedisEasy:ctor(config)
     self.config = clone(totable(config))
@@ -61,16 +61,16 @@ function RedisEasy:command(command, ...)
     return self.adapter:command(command, ...)
 end
 
-function RedisEasy:readReply()
-    return self.adapter:readReply()
+function RedisEasy:pubsub(subscriptions)
+    return self.adapter:pubsub(subscriptions)
 end
 
 function RedisEasy:newPipeline()
     return RedisPipeline.new(self)
 end
 
-function RedisEasy:newTransition(...)
-    return RedisTransition.new(self, ...)
+function RedisEasy:newTransaction(...)
+    return RedisTransaction.new(self, ...)
 end
 
 function RedisEasy:hashToArray(hash)

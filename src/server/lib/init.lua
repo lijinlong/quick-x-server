@@ -23,6 +23,7 @@ cc.server.CommandLineServerBase = require(cc.PACKAGE_NAME .. ".CommandLineServer
 cc.server.ActionBase            = require(cc.PACKAGE_NAME .. ".ActionBase")
 cc.server.Session               = require(cc.PACKAGE_NAME .. ".Session")
 cc.server.RedisEasy             = require(cc.PACKAGE_NAME .. ".RedisEasy")
+cc.server.BeanstalkdEasy        = require(cc.PACKAGE_NAME .. ".BeanstalkdEasy")
 
 -- init base classes
 cc.Registry   = require("framework.cc.Registry")

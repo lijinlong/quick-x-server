@@ -12,6 +12,8 @@ function ServerAppBase:ctor(config)
     self.isRunning = true
     self.config = clone(totable(config))
     self.config.appModuleName = config.appModuleName or "app"
+    self.config.actionPackage = config.actionPackage or "actions"
+    self.config.actionModuleSuffix = config.actionModuleSuffix or "Action"
 end
 
 function ServerAppBase:run()
@@ -27,7 +29,7 @@ end
 
 function ServerAppBase:doRequest(actionName, data)
     local actionModuleName, actionMethodName = self:normalizeActionName(actionName)
-    actionModuleName = "actions." .. string.ucfirst(actionModuleName) .. "Action"
+    actionModuleName = string.format("%s.%s%s", self.config.actionPackage, string.ucfirst(actionModuleName), self.config.actionModuleSuffix)
     actionMethodName = actionMethodName .. "Action"
 
     local actionModule = self:require(actionModuleName)
@@ -57,6 +59,38 @@ function ServerAppBase:normalizeActionName(actionName)
     local parts = string.split(actionName, ".")
     if #parts == 1 then parts[2] = 'index' end
     return parts[1], parts[2]
+end
+
+function ServerAppBase:newRedis(config)
+    local redis = cc.server.RedisEasy.new(config or self.config.redis)
+    local ok, err = redis:connect()
+    if not ok then
+        throw(ERR_SERVER_OPERATION_FAILED, "failed to connect redis, %s", err)
+    end
+    return redis
+end
+
+function ServerAppBase:getRedis()
+    if not self.redis then
+        self.redis = self:newRedis()
+    end
+    return self.redis
+end
+
+function ServerAppBase:newBeanstalkd(config)
+    local bean = cc.server.BeanstalkdEasy.new(config or self.config.beanstalkd)
+    local ok, err = bean:connect()
+    if not ok then
+        throw(ERR_SERVER_OPERATION_FAILED, "failed to connect beanstalkd, %s", err)
+    end
+    return bean
+end
+
+function ServerAppBase:getBeanstalkd()
+    if not self.beanstalkd then
+        self.beanstalkd = self:newBeanstalkd()
+    end
+    return self.beanstalkd
 end
 
 return ServerAppBase

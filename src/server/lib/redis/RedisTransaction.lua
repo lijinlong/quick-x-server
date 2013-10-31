@@ -1,18 +1,18 @@
 
-local RedisTransition = class("RedisTransition")
+local RedisTransaction = class("RedisTransaction")
 
-function RedisTransition:ctor(easy, ...)
+function RedisTransaction:ctor(easy, ...)
     self.easy = easy
     self.started = false
     if #{...} > 0 then self:watch(...) end
 end
 
-function RedisTransition:watch(...)
-    assert(self.started == false, "RedisTransition:watch() - WATCH inside MULTI is not allowed")
+function RedisTransaction:watch(...)
+    assert(self.started == false, "RedisTransaction:watch() - WATCH inside MULTI is not allowed")
     return self.easy:command("watch", ...)
 end
 
-function RedisTransition:command(command, ...)
+function RedisTransaction:command(command, ...)
     if not self.started then
         self.easy:command("multi")
         self.started = true
@@ -20,12 +20,12 @@ function RedisTransition:command(command, ...)
     return self.easy:command(command, ...)
 end
 
-function RedisTransition:commit()
+function RedisTransaction:commit()
     return self.easy:command("exec")
 end
 
-function RedisTransition:discard()
+function RedisTransaction:discard()
     return self.easy:command("discard")
 end
 
-return RedisTransition
+return RedisTransaction
