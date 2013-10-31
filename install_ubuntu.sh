@@ -6,6 +6,8 @@ if [ $UID -ne 0 ]; then
     exit 1
 fi
 
+apt-get update
+apt-get dist-upgrade
 apt-get install -y build-essential
 apt-get install -y php5-cli php5-dev php5-mysql mysql-server mysql-common libpcre3-dev
 apt-get install -y git-core unzip
