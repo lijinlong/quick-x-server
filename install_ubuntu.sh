@@ -6,12 +6,12 @@ if [ $UID -ne 0 ]; then
     exit 1
 fi
 
-apt-get install -y build-essential
-apt-get install -y libpcre3-dev
-apt-get install -y git-core unzip
+set -e
+
+apt-get install -y build-essential libpcre3-dev git-core unzip
 
 DEST_DIR=/opt/quick_server
-BUILD_DIR=install_quick_server
+BUILD_DIR=/tmp/install_quick_server
 THIRD_PARTY_DIR=$DEST_DIR/third_party
 
 OPENRESTY_VER=1.4.3.1
@@ -49,7 +49,7 @@ cd ..
 make
 make install
 
-ln -s $DEST_DIR/openresty/luajit/bin/luajit lua
+ln -s $DEST_DIR/openresty/luajit/bin/luajit $DEST_DIR/openresty/luajit/bin/lua
 
 # install luarocks
 cd $BUILD_DIR
