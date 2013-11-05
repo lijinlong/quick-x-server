@@ -55,57 +55,45 @@ end
 function TestServerApp:subscribePushMessageChannel()
     local function subscribe()
         local channel = self.pushMessageChannel
-        local isRunning = self.isRunning
+        local isRunning = true
 
-        local sub = self:newRedis()
-        local ok, err = sub:command("subscribe", channel)
+        local redis = self:newRedis()
+        local ok, loop = redis:pubsub({subscribe = channel})
         if not ok then
-            throw(ERR_SERVER_OPERATION_FAILED, "client %s subscribe channel [%s] failed, %s", self.sid, channel, err)
+            throw(ERR_SERVER_OPERATION_FAILED, "subscribe channel [%s] failed, %s", channel, loop)
         end
 
-        if self.config.debug then
-            echoInfo("client %s subscribed channel [%s]", self.sid, channel)
-        end
-
-        while isRunning do
-            local ok, result = sub:readReply()
-            if not self.isRunning then
-                -- main thread is dead
-                isRunning = false
-                break
-            end
-
-            if not ok then
-                if result ~= "timeout" then
-                    echoInfo("client %s get message from channel [%s] failed, %s", self.sid, channel, result)
-                    break
-                end
-            else
-                local message = tostring(result[3])
+        for msg, abort in loop do
+            if msg.kind == "subscribe" then
                 if self.config.debug then
-                    local msg = message
-                    if string.len(msg) > 20 then
-                        msg = string.sub(msg, 1, 20) .. " ..."
+                    echoInfo("subscribed channel [%s]", msg.channel)
+                end
+            elseif msg.kind == "message" then
+                if self.config.debug then
+                    local msg_ = msg.payload
+                    if string.len(msg_) > 20 then
+                        msg_ = string.sub(msg_, 1, 20) .. " ..."
                     end
-                    echoInfo("client %s get message [%s] from channel [%s]", self.sid, msg, channel)
+                    echoInfo("get message [%s] from channel [%s]", msg_, channel)
                 end
 
-                if message == "quit" then
+                if msg.payload == "quit" then
                     isRunning = false
+                    abort()
                     break
                 end
 
                 -- forward message to client
-                self.websockets:send_text(message)
+                self.websockets:send_text(msg.payload)
             end
         end
 
         -- when error occured, connect will auto close, subscribe will remove too
-        sub:close()
-        sub = nil
+        redis:close()
+        redis = nil
 
         if self.config.debug then
-            echoInfo("client %s unsubscribed from channel [%s]", self.sid, channel)
+            echoInfo("unsubscribed from channel [%s]", channel)
         end
 
         if isRunning then

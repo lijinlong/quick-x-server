@@ -8,6 +8,10 @@ function getCityId(uid)
     return string.format(CITY_ID_KEY, uid)
 end
 
+function getStrongholdId(uid)
+    return string.format(STRONGHOLD_ID_KEY, uid)
+end
+
 function getCityMapId(uid)
     return string.format(CITY_MAP_ID_KEY, uid)
 end
