@@ -1,4 +1,18 @@
 
+local ok, socket = pcall(function()
+    return require("socket")
+end)
+
+if ok then
+    math.randomseed(socket.gettime() * 1000)
+else
+    math.randomseed(os.time())
+end
+math.random()
+math.random()
+math.random()
+math.random()
+
 if type(DEBUG) ~= "number" then DEBUG = 1 end
 local CURRENT_MODULE_NAME = ...
 
@@ -24,6 +38,7 @@ cc.server.ActionBase            = require(cc.PACKAGE_NAME .. ".ActionBase")
 cc.server.Session               = require(cc.PACKAGE_NAME .. ".Session")
 cc.server.RedisEasy             = require(cc.PACKAGE_NAME .. ".RedisEasy")
 cc.server.BeanstalkdEasy        = require(cc.PACKAGE_NAME .. ".BeanstalkdEasy")
+cc.server.MysqlEasy             = require(cc.PACKAGE_NAME .. ".MysqlEasy")
 
 -- init base classes
 cc.Registry   = require("framework.cc.Registry")

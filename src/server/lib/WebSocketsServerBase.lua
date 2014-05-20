@@ -26,6 +26,13 @@ function WebSocketsServerBase:ctor(config)
     end
 end
 
+function WebSocketsServerBase:closeClientConnect()
+    if self.websockets then
+        self.websockets:send_close()
+        self.websockets = nil
+    end
+end
+
 function WebSocketsServerBase:runEventLoop()
     local server = require("resty.websocket.server")
     local wb, err = server:new({
@@ -125,6 +132,10 @@ function WebSocketsServerBase:processWebSocketsMessage(rawMessage, messageType)
             echoInfo("invalid result from action %s", actionName)
             result = nil
         end
+    end
+
+    if not self.websockets then
+        return false, "websockets removed"
     end
 
     if result then

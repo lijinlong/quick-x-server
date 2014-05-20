@@ -21,7 +21,9 @@ function BeanstalkdHaricotAdapter:command(command, ...)
     if not self.instance then return false, self.ctorErr end
     local method = self.instance[command]
     assert(type(method) == "function", string.format("BeanstalkdHaricotAdapter:command() - invalid command %s", tostring(command)))
-    return method(self.instance, ...)
+    local ok, result = method(self.instance, ...)
+    if ok then return result end
+    return false, result
 end
 
 return BeanstalkdHaricotAdapter

@@ -33,6 +33,11 @@ function ServerAppBase:doRequest(actionName, data)
     actionMethodName = actionMethodName .. "Action"
 
     local actionModule = self:require(actionModuleName)
+    local t = type(actionModule)
+    if t ~= "table" and t ~= "userdata" then
+        throw(ERR_SERVER_INVALID_ACTION, "failed to load action module %s", actionModuleName)
+    end
+
     local action = actionModule.new(self)
     local method = action[actionMethodName]
     if type(method) ~= "function" then
@@ -43,6 +48,10 @@ function ServerAppBase:doRequest(actionName, data)
         data = self.requestParameters or {}
     end
     return method(action, data)
+end
+
+function ServerAppBase:newService(name)
+    return self:require(string.format("services.%sService", string.ucfirst(name))).new(self)
 end
 
 function ServerAppBase:require(moduleName)
@@ -91,6 +100,31 @@ function ServerAppBase:getBeanstalkd()
         self.beanstalkd = self:newBeanstalkd()
     end
     return self.beanstalkd
+end
+
+function ServerAppBase:newMysql(config)
+    local mysql, err = cc.server.MysqlEasy.new(config or self.config.mysql)
+
+    if err then
+        throw(ERR_SERVER_OPERATION_FAILED, "failed to connect mysql, %s", err)
+    end
+
+    return mysql
+end
+
+function ServerAppBase:getMysql()
+    if not self.mysql then
+        self.mysql = self:newMysql()
+        return self.mysql
+    end
+
+    if not ngx then
+        self.mysql:close()
+        self.mysql = nil
+        self.mysql = self:newMysql()
+    end
+
+    return self.mysql
 end
 
 return ServerAppBase

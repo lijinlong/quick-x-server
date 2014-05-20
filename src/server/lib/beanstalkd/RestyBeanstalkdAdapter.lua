@@ -11,8 +11,8 @@ end
 function RestyBeanstalkdAdapter:connect()
     if not self.instance then return false, self.ctorErr end
 
-    local ok, err = self.instance:connect(self.easy.config.host, self.easy.config.port)
-    if not ok then
+    local _, err = self.instance:connect(self.easy.config.host, self.easy.config.port)
+    if err then
         return false, err
     end
     self.instance:set_timeout(self.easy.config.timeout)

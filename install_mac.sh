@@ -44,8 +44,8 @@ mv lua-nginx-module-fix-sockets ngx_lua-1
 cd ..
 
 ./configure --prefix=$DEST_DIR/openresty --with-luajit \
-    --with-cc-opt="-I/usr/local/Cellar/pcre/8.33/include" \
-    --with-ld-opt="-L/usr/local/Cellar/pcre/8.33/lib"
+    --with-cc-opt="-I/usr/local/Cellar/pcre/8.34/include" \
+    --with-ld-opt="-L/usr/local/Cellar/pcre/8.34/lib"
 make
 make install
 

@@ -9,20 +9,23 @@ local config = {
 
 local redis = RedisEasy.new(config)
 local ok, err = redis:connect()
+if err then
+    -- ....
+end
 
-local ok, err = redis:command(...)
-lcoal ok, err = redis:readReply()
+local result, err = redis:command(...)
+lcoal result, err = redis:readReply()
 
 local pipeline = redis:newPipeline()
 pipeline:command(...)
 pipeline:command(...)
-local ok, err = pipeline:commit()
+local result, err = pipeline:commit()
 
 local transition = redis:newTransition(watch1, watch2)
 transition:watch(...)
 transition:command(...)
 transition:command(...)
-local ok, err = transition:commit()
+local result, err = transition:commit()
 -- transition:discard()
 
 redis:close()
@@ -41,11 +44,31 @@ end
 local RedisPipeline = import(".redis.RedisPipeline")
 local RedisTransaction = import(".redis.RedisTransaction")
 
+local RESULT_CONVERTER = {
+    exists = {
+        RedisLuaAdapter = function(self, r)
+            if r == true then
+                return 1
+            else
+                return 0
+            end
+        end,
+    },
+
+    hgetall = {
+        RestyRedisAdapter = function(self, r)
+            return self:arrayToHash(r)
+        end,
+    },
+
+}
+
 function RedisEasy:ctor(config)
     self.config = clone(totable(config))
     self.config.host = self.config.host or "127.0.0.1"
     self.config.port = self.config.port or 6379
     self.config.timeout = self.config.timeout or 10 * 1000
+    self.config.debug = tobool(config.debug)
     self.adapter = RedisAdapter.new(self)
 end
 
@@ -58,7 +81,16 @@ function RedisEasy:close()
 end
 
 function RedisEasy:command(command, ...)
-    return self.adapter:command(command, ...)
+    command = string.lower(command)
+    local res, err = self.adapter:command(command, ...)
+    if not err then
+        -- converting result
+        local convert = RESULT_CONVERTER[command]
+        if convert and convert[self.adapter.name] then
+            res = convert[self.adapter.name](self, res)
+        end
+    end
+    return res, err
 end
 
 function RedisEasy:pubsub(subscriptions)

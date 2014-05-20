@@ -4,13 +4,14 @@ local redis = require("resty.redis")
 local RestyRedisAdapter = class("RestyRedisAdapter")
 
 function RestyRedisAdapter:ctor(easy)
-    self.easy = easy
+    self.config = easy.config
     self.instance = redis:new()
+    self.name = "RestyRedisAdapter"
 end
 
 function RestyRedisAdapter:connect()
-    self.instance:set_timeout(self.easy.config.timeout)
-    return self.instance:connect(self.easy.config.host, self.easy.config.port)
+    self.instance:set_timeout(self.config.timeout)
+    return self.instance:connect(self.config.host, self.config.port)
 end
 
 function RestyRedisAdapter:close()
@@ -20,6 +21,13 @@ end
 function RestyRedisAdapter:command(command, ...)
     local method = self.instance[command]
     assert(type(method) == "function", string.format("RestyRedisAdapter:command() - invalid command %s", tostring(command)))
+
+    if self.config.debug then
+        local a = {}
+        table.walk({...}, function(v) a[#a + 1] = tostring(v) end)
+        printf("[REDIS] %s: %s", string.upper(command), table.concat(a, ", "))
+    end
+
     return method(self.instance, ...)
 end
 
@@ -71,7 +79,7 @@ function RestyRedisAdapter:pubsub(subscriptions)
         subscribe(self.instance.psubscribe, subscriptions.psubscribe)
     end
 
-    return true, coroutine.wrap(function()
+    return coroutine.wrap(function()
         while true do
             local result, err
             if #subscribeMessages > 0 then
@@ -122,9 +130,11 @@ end
 
 function RestyRedisAdapter:commitPipeline(commands)
     self.instance:init_pipeline()
+    if self.config.debug then print("[REDIS] INIT PIPELINE") end
     for _, arg in ipairs(commands) do
-        self.instance:command(arg[1], unpack(arg[2]))
+        self:command(arg[1], unpack(arg[2]))
     end
+    if self.config.debug then print("[REDIS] COMMIT PIPELINE") end
     return self.instance:commit_pipeline()
 end
 
