@@ -58,7 +58,7 @@ function MysqlEasy:insert(tableName, params)
     return ok, err
 end
 
-function MysqlEasy:call(produce, params)
+function MysqlEasy:call(procedure, params)
     assert(self.db_ ~= nil, "Not connect to mysql")
     local fields = {}
   
@@ -68,7 +68,7 @@ function MysqlEasy:call(produce, params)
     end
 
     local sql = string.format("CALL %s(%s)",
-                       self:escapeName(produce),
+                       self:escapeName(procedure),
                        table.concat(fields, ","))
 
     local ok, err, errno, sqlstate = self.db_:query(sql)
