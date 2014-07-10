@@ -27,7 +27,7 @@ end
 function MysqlEasy:query(queryStr)
     assert(self.db_ ~= nil, "Not connect to mysql")
 
-    local ok, err = self.db_:query(queryStr)
+    local ok, err, errno, sqlstate = self.db_:query(queryStr)
     if err then
         printf("[MYSQL] mysql query error: %s, %s, %s", err, tostring(errno), sqlstate)
     end
@@ -51,9 +51,29 @@ function MysqlEasy:insert(tableName, params)
                        table.concat(fieldValues, ","))
 
     -- printf("SQL: " .. sql)
-    local ok, err = self.db_:query(sql)
+    local ok, err, errno, sqlstate = self.db_:query(sql)
     if err then
         printf("[MYSQL] mysql query error: %s, %s, %s", err, tostring(errno), sqlstate)
+    end
+    return ok, err
+end
+
+function MysqlEasy:call(procedure, params)
+    assert(self.db_ ~= nil, "Not connect to mysql")
+    local fields = {}
+  
+
+    for name, value in pairs(params) do
+        fields[#fields + 1] = self:escapeValue(value)
+    end
+
+    local sql = string.format("CALL %s(%s)",
+                       self:escapeName(procedure),
+                       table.concat(fields, ","))
+
+    local ok, err, errno, sqlstate = self.db_:query(sql)
+    if err then
+        printf("[MYSQL] mysql call error: %s, %s, %s", err, tostring(errno), sqlstate)
     end
     return ok, err
 end
@@ -78,7 +98,7 @@ function MysqlEasy:update(tableName, params, where)
 
     -- printf("SQL: " .. sql)
 
-    local ok, err = self.db_:query(sql)
+    local ok, err, errno, sqlstate = self.db_:query(sql)
     if err then
         printf("[MYSQL] mysql query error: %s, %s, %s", err, tostring(errno), sqlstate)
     end
@@ -99,7 +119,7 @@ function MysqlEasy:del(tableName, where)
 
     -- printf("SQL: " .. sql)
 
-    local ok, err = self.db_:query(sql)
+    local ok, err, errno, sqlstate = self.db_:query(sql)
     if err then
         printf("[MYSQL] mysql query error: %s, %s, %s", err, tostring(errno), sqlstate)
     end

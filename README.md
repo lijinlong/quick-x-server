@@ -22,7 +22,7 @@ http {
             lua_code_cache off;
             lua_socket_log_errors off;
             lua_check_client_abort on;
-            content_by_lua_file /pathto/quick-x-server/src/server/bootstrap.lua;
+            content_by_lua_file /pathto/quick-x-server/src/server/nginx_bootstrap.lua;
         }
 
     }
