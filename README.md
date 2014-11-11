@@ -1,4 +1,7 @@
 
+> 新版 quickserver 正在开发中，敬请期待！
+
+
 # Nginx Lua Game Server
 
 
