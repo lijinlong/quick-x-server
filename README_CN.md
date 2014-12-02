@@ -1,5 +1,6 @@
 # 基本架构
-
+需要安装libssl-dev
+sudo apt-get install libssl-dev
 
 - 客户端使用 WebSockets 连接服务端（OpenResty）。
 - 对于每一个客户端连接，服务端框架（Server Framework）用一个线程（ngx.thread，实际上是协程）监听客户端发送的消息。
